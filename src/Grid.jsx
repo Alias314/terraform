@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  screenToCoordinate,
+  invertMatrix,
+  toGridCoordinate,
+  getMouseCoordinates,
+} from "./gridUtils";
 
 export default function Grid() {
   const spriteSize = 80;
@@ -10,107 +16,93 @@ export default function Grid() {
   const offsetX = screenWidth / 2;
   const offsetY = screenHeight / 4;
   const [grid, setGrid] = useState([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
   const [mouseTile, setMouseTile] = useState({ x: 0, y: 0 });
-
-  const iX = 1;
-  const iY = 0.5;
-  const jX = -1;
-  const jY = 0.5;
+  const mouseRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    let count = 1;
+    let tempGrid = [];
+
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        const coordinates = screenToCoordinate({ x: i, y: j });
+
+        tempGrid.push({
+          x: coordinates.x + offsetX,
+          y: coordinates.y + offsetY,
+          type: "grass_block.png",
+        });
+      }
+    }
+    setGrid(tempGrid);
+  }, []);
+
+  useEffect(() => {
+    let animationSpeed = 0;
 
     const interval = setInterval(() => {
-      const tempGrid = [];
-
-      const gridCoordinates = toGridCoordinate();
-      const x = Math.floor(gridCoordinates.x);
-      const y = Math.floor(gridCoordinates.y);
+      const { x, y } = toGridCoordinate(mouseRef);
       setMouseTile({ x: x, y: y });
 
-      for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
+      setGrid((prev) => {
+        return prev.map((tile, index) => {
+          const i = Math.floor(index / gridSize);
+          const j = index % gridSize;
           const coordinates = screenToCoordinate({ x: i, y: j });
-          const highlightHeight = x === i && y === j ? 10 : 0;
+          const highlightHeight = i === x && j === y ? 10 : 0;
 
-          tempGrid.push({
+          if (tile.type === "water_block.png") coordinates.y = coordinates.y + Math.sin(i + j + animationSpeed);
+          
+          return {
+            ...tile,
             x: coordinates.x + offsetX,
             y: coordinates.y + offsetY - highlightHeight,
-            type: "grass_block.png",
-          });
-        }
-      }
+          };
+        });
+      });
 
-      count += 0.1;
-      setGrid(tempGrid);
+      animationSpeed += 0.1;
     }, 16);
 
     return () => clearInterval(interval);
   }, []);
 
-  const getMouseCoordinates = (event) => {
-    const mouseCoordinates = {
-      x: event.clientX - offsetX,
-      y: event.clientY - offsetY,
+  useEffect(() => {
+    const handleClick = () => {
+      const { x, y } = toGridCoordinate(mouseRef);
+      if (!(x >= 0 && x < gridSize && y >= 0 && y < gridSize)) return;
+
+      const index = x * gridSize + y;
+      console.log(x, y, index);
+      const newGrid = [...grid];
+
+      newGrid[index] = {
+        ...newGrid[index],
+        type: "water_block.png",
+      };
+
+      setGrid([...newGrid]);
     };
 
-    mouseRef.current = mouseCoordinates;
-  };
+    window.addEventListener("click", handleClick);
 
-  const screenToCoordinate = (tile) => {
-    return {
-      x: (tile.x * iX * 0.5 * tileWidth + tile.y * jX * 0.5 * tileWidth) / 1.15,
-      y: tile.x * iY * 0.5 * tileHeight + tile.y * jY * 0.5 * tileHeight,
-    };
-  };
-
-  const invertMatrix = (a, b, c, d) => {
-    const det = 1 / (a * d - b * c);
-
-    return {
-      a: det * d,
-      b: det * -b,
-      c: det * -c,
-      d: det * a,
-    };
-  };
-
-  const toGridCoordinate = () => {
-    const a = iX * tileWidth * 0.5;
-    const b = jX * tileWidth * 0.5;
-    const c = iY * tileHeight * 0.5;
-    const d = jY * tileHeight * 0.5;
-
-    const inverseMatrix = invertMatrix(a, b, c, d);
-    const mouseCoordinates = mouseRef.current;
-
-    return {
-      x:
-        mouseCoordinates.x * 1.15 * inverseMatrix.a +
-        mouseCoordinates.y * inverseMatrix.b,
-      y:
-        mouseCoordinates.x * 1.15 * inverseMatrix.c +
-        mouseCoordinates.y * inverseMatrix.d +
-        1,
-    };
-  };
+    return () => removeEventListener("click", handleClick);
+  }, [grid]);
 
   return (
     <div
-      onMouseMove={getMouseCoordinates}
+      onMouseMove={(event) => getMouseCoordinates(event, mouseRef)}
       className="w-full h-full"
     >
-      <h1 className="text-4xl">
-        X:{mouseRef.current.x} - {mouseTile.x}
+      <h1 className="absolute min-w-24 m-6 px-10 py-2 text-4xl text-white font-semibold bg-blue-600 rounded-2xl select-none">
+        x {mouseTile.x}
         <br />
-        Y: {mouseRef.current.y} - {mouseTile.y}
+        y {mouseTile.y}
       </h1>
 
       {grid.map((tile) => (
         <img
           key={`${tile.x}-${tile.y}`}
-          className={`absolute pointer-events-none`}
+          className={`absolute select-none`}
           style={{
             width: tileWidth,
             height: tileHeight,
