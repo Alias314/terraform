@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { screenToCoordinate } from "./gridUtils";
+import { screenToCoordinate, toGridCoordinate } from "./gridUtils";
 
-export default function Boar({ gridX, gridY, screenX, screenY, type }) {
+export default function Boar({ grid, gridX, gridY, screenX, screenY, type }) {
   const spriteWidth = 46 * 1.5;
   const spriteHeight = 32 * 1.5;
   const offsetX = 10;
@@ -17,17 +17,11 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
     y: screenY,
   });
 
-  const directions = [
-    { x: -1, y: 0 },
-    { x: 1, y: 0 },
-    { x: 0, y: 1 },
-    { x: 0, y: -1 },
-  ];
-
   useEffect(() => {
     const speed = Math.max(Math.random() * 1000, 500);
     const interval = setInterval(() => {
       const nextGridPos = getRandomGridPosition(gridPosition);
+      console.log(nextGridPos);
 
       setGridPosition(nextGridPos);
       const screenCoordinates = screenToCoordinate(nextGridPos);
@@ -42,20 +36,32 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
   }, [gridPosition]);
 
   const getRandomGridPosition = (current) => {
+    if (grid.length === 0) return;
+
     let count = 0;
     let newX = current.x;
     let newY = current.y;
+    const directions = [
+      { x: -1, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: -1 },
+    ];
 
     while (count < 20) {
       const dir = directions[Math.floor(Math.random() * directions.length)];
       const candidateX = current.x + dir.x;
       const candidateY = current.y + dir.y;
+      const index = candidateX * gridSize + candidateY;
+      const tile = grid[index];
 
       if (
         candidateX >= 0 &&
         candidateX < gridSize &&
         candidateY >= 0 &&
-        candidateY < gridSize
+        candidateY < gridSize &&
+        tile &&
+        tile.type !== "water_block.png"
       ) {
         newX = candidateX;
         newY = candidateY;
@@ -69,8 +75,8 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
   };
 
   return (
-    <img
-      className={`absolute select-none transition-all duration-100 ease-in-out`}
+    <div
+      className="absolute w-fit h-fit select-none transition-all duration-100 ease-in-out"
       style={{
         width: spriteWidth,
         height: spriteHeight,
@@ -78,7 +84,9 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
         top: screenPosition.y - offsetY,
         imageRendering: "pixelated",
       }}
-      src={type}
-    />
+    >
+      <h1 className="absolute text-blue-100">Wandering</h1>
+      <img width={spriteWidth} height={spriteHeight} src={type} />
+    </div>
   );
 }

@@ -50,6 +50,7 @@ export default function Grid() {
         newGrid.push({
           x: coordinates.x + offsetX,
           y: coordinates.y + offsetY,
+          waveOffset: 0,
           type: "grass_block.png",
         });
       }
@@ -71,14 +72,16 @@ export default function Grid() {
           const j = index % gridSize;
           const coordinates = screenToCoordinate({ x: i, y: j });
           const highlightHeight = i === x && j === y ? 10 : 0;
-
-          if (tile.type === "water_block.png")
-            coordinates.y = coordinates.y + Math.sin(i + j + animationSpeed);
+          const waveOffset =
+            tile.type === "water_block.png"
+              ? Math.sin(i + j + animationSpeed) * 1.2
+              : 0;
 
           return {
             ...tile,
             x: coordinates.x + offsetX,
             y: coordinates.y + offsetY - highlightHeight,
+            waveOffset: waveOffset,
           };
         });
       });
@@ -95,12 +98,16 @@ export default function Grid() {
       if (!(x >= 0 && x < gridSize && y >= 0 && y < gridSize)) return;
 
       const index = x * gridSize + y;
-      console.log(x, y, index);
       const newGrid = [...grid];
+      const newType =
+        newGrid[index].type === "grass_block.png"
+          ? "water_block.png"
+          : "grass_block.png";
+      console.log(newType);
 
       newGrid[index] = {
         ...newGrid[index],
-        type: "water_block.png",
+        type: newType,
       };
 
       setGrid([...newGrid]);
@@ -112,10 +119,7 @@ export default function Grid() {
   }, [grid]);
 
   return (
-    <div
-      onMouseMove={(event) => getMouseCoordinates(event, mouseRef)}
-      className="w-full h-full"
-    >
+    <div onMouseMove={(event) => getMouseCoordinates(event, mouseRef)}>
       <h1 className="absolute min-w-24 m-6 px-10 py-2 text-4xl text-white font-semibold bg-blue-600 rounded-2xl select-none">
         x {mouseTile.x}
         <br />y {mouseTile.y}
@@ -130,6 +134,8 @@ export default function Grid() {
             height: tileHeight,
             left: tile.x,
             top: tile.y,
+            transform: `translateY(${tile.waveOffset}px)`,
+            transition: 'none',
             imageRendering: "pixelated",
           }}
           src={tile.type}
@@ -138,6 +144,7 @@ export default function Grid() {
       {entities.map((entity) => (
         <Boar
           key={`${entity.gridX}-${entity.gridY}`}
+          grid={grid}
           gridX={entity.gridX}
           gridY={entity.gridY}
           screenX={entity.screenX}
