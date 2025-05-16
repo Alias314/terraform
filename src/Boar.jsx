@@ -25,17 +25,18 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
   ];
 
   useEffect(() => {
+    const speed = Math.max(Math.random() * 1000, 500);
     const interval = setInterval(() => {
       const nextGridPos = getRandomGridPosition(gridPosition);
 
       setGridPosition(nextGridPos);
-
       const screenCoordinates = screenToCoordinate(nextGridPos);
+
       setScreenPosition({
         x: screenCoordinates.x + screenOffsetX,
         y: screenCoordinates.y + screenOffsetY,
       });
-    }, 500);
+    }, speed);
 
     return () => clearInterval(interval);
   }, [gridPosition]);
