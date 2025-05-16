@@ -69,7 +69,7 @@ export default function Boar({ gridX, gridY, screenX, screenY, type }) {
 
   return (
     <img
-      className={`absolute select-none`}
+      className={`absolute select-none transition-all duration-100 ease-in-out`}
       style={{
         width: spriteWidth,
         height: spriteHeight,
