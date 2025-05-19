@@ -5,6 +5,7 @@ import {
   getMouseCoordinates,
 } from "./gridUtils";
 import Boar from "./Boar";
+import Bush from "./Bush";
 
 export default function Grid() {
   const spriteSize = 80;
@@ -15,37 +16,27 @@ export default function Grid() {
   const screenHeight = window.innerHeight;
   const offsetX = screenWidth / 2;
   const offsetY = screenHeight / 4;
-  const [grid, setGrid] = useState([]);
-  const [mouseTile, setMouseTile] = useState({ x: 0, y: 0 });
   const mouseRef = useRef({ x: 0, y: 0 });
+  const [mouseTile, setMouseTile] = useState({ x: 0, y: 0 });
+  const [grid, setGrid] = useState([]);
   const [entities, setEntities] = useState([]);
+  const [bushes, setBushes] = useState([]);
+  const amountBoar = 9;
+  const amountBushes = 10;
 
   useEffect(() => {
+    const newGrid = [];
     const newEntities = [];
-
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        const coordinates = screenToCoordinate({ x: i, y: j });
-
-        newEntities.push({
-          gridX: i + 4,
-          gridY: j + 4,
-          screenX: coordinates.x + offsetX,
-          screenY: coordinates.y + offsetY,
-          type: "boar.png",
-        });
-      }
-    }
-
-    setEntities(newEntities);
-  }, []);
-
-  useEffect(() => {
-    let newGrid = [];
+    const newBushes = [];
+    const entityList = {};
+    const bushList = {};
 
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
-        const coordinates = screenToCoordinate({ x: i, y: j });
+        const coordinates = screenToCoordinate({
+          x: i,
+          y: j,
+        });
 
         newGrid.push({
           x: coordinates.x + offsetX,
@@ -56,7 +47,55 @@ export default function Grid() {
       }
     }
 
+    for (let i = 0; i < amountBoar; i++) {
+      const randomCoordinateX = Math.floor(Math.random() * gridSize);
+      const randomCoordinateY = Math.floor(Math.random() * gridSize);
+      const coordinates = screenToCoordinate({
+        x: randomCoordinateX,
+        y: randomCoordinateY,
+      });
+
+      if (!entityList[`${randomCoordinateX}-${randomCoordinateY}`]) {
+        entityList[`${randomCoordinateX}-${randomCoordinateY}`] = 1;
+      } else {
+        continue;
+      }
+
+      newEntities.push({
+        gridX: randomCoordinateX,
+        gridY: randomCoordinateY,
+        screenX: coordinates.x + offsetX,
+        screenY: coordinates.y + offsetY,
+        type: "boar.png",
+      });
+    }
+
+    for (let i = 0; i < amountBushes; i++) {
+      const randomCoordinateX = Math.floor(Math.random() * gridSize);
+      const randomCoordinateY = Math.floor(Math.random() * gridSize);
+      const coordinates = screenToCoordinate({
+        x: randomCoordinateX,
+        y: randomCoordinateY,
+      });
+
+      if (!bushList[`${randomCoordinateX}-${randomCoordinateY}`]) {
+        bushList[`${randomCoordinateX}-${randomCoordinateY}`] = 1;
+      } else {
+        continue;
+      }
+
+      newBushes.push({
+        gridX: randomCoordinateX,
+        gridY: randomCoordinateY,
+        screenX: coordinates.x + offsetX,
+        screenY: coordinates.y + offsetY,
+        type: "bush.png",
+      });
+    }
+
     setGrid(newGrid);
+    setEntities(newEntities);
+    setBushes(newBushes);
   }, []);
 
   useEffect(() => {
@@ -103,7 +142,6 @@ export default function Grid() {
         newGrid[index].type === "grass_block.png"
           ? "water_block.png"
           : "grass_block.png";
-      console.log(newType);
 
       newGrid[index] = {
         ...newGrid[index],
@@ -135,7 +173,7 @@ export default function Grid() {
             left: tile.x,
             top: tile.y,
             transform: `translateY(${tile.waveOffset}px)`,
-            transition: 'none',
+            transition: "none",
             imageRendering: "pixelated",
           }}
           src={tile.type}
@@ -150,6 +188,18 @@ export default function Grid() {
           screenX={entity.screenX}
           screenY={entity.screenY}
           type={entity.type}
+        />
+      ))}
+
+      {bushes.map((bush) => (
+        <Bush
+          key={`${bush.gridX}-${bush.gridY}`}
+          grid={grid}
+          gridX={bush.gridX}
+          gridY={bush.gridY}
+          screenX={bush.screenX}
+          screenY={bush.screenY}
+          type={bush.type}
         />
       ))}
     </div>
